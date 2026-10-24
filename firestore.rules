@@ -1,0 +1,52 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOfficial() {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Official';
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+
+      allow create: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasAll(['email', 'role'])
+        && request.resource.data.keys().hasOnly(['email', 'role'])
+        && request.resource.data.email is string
+        && request.resource.data.role == 'Citizen';
+    }
+
+    match /reportedIssues/{issueId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasAll([
+          'lat', 'lon', 'issue', 'icon', 'address', 'timestamp', 'status'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'lat', 'lon', 'issue', 'icon', 'address', 'timestamp', 'status'
+        ])
+        && request.resource.data.lat is number
+        && request.resource.data.lat >= -90
+        && request.resource.data.lat <= 90
+        && request.resource.data.lon is number
+        && request.resource.data.lon >= -180
+        && request.resource.data.lon <= 180
+        && request.resource.data.issue is string
+        && request.resource.data.icon is string
+        && request.resource.data.address is string
+        && request.resource.data.timestamp is timestamp
+        && request.resource.data.status == 'Pending';
+
+      allow update: if isOfficial()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in ['Pending', 'In Progress', 'Resolved'];
+    }
+  }
+}

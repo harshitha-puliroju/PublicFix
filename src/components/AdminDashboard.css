@@ -1,0 +1,61 @@
+.admin-dashboard {
+    background-color: #f0f8ff; /* Light Blue Background */
+    padding: 20px;
+    border-radius: 10px;
+    font-family: Arial, sans-serif;
+  }
+  
+  h1 {
+    color: #004f87; /* Darker Blue */
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .issues-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff; /* White for the table */
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .issues-table th, .issues-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .issues-table th {
+    background-color: #005d92; /* Darker Blue for the header */
+    color: white;
+  }
+  
+  .issues-table tr:nth-child(even) {
+    background-color: #f4f9fc; /* Light Blue for alternate rows */
+  }
+  
+  .issues-table tr:hover {
+    background-color: #e0f0ff; /* Light Blue on hover */
+  }
+  
+  select {
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid #bbb;
+    background-color: #f1f9ff; /* Light Blue Background for dropdown */
+  }
+  
+  .action-btn {
+    background-color: #0074cc; /* Medium Blue */
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 10px;
+  }
+  
+  .action-btn:hover {
+    background-color: #005f99; /* Darker Blue on hover */
+  }
+  
