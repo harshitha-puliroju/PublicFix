@@ -1,70 +1,351 @@
-# Getting Started with Create React App
+# PublicFix
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+### Civic Issue Reporting & Resolution Platform
 
-## Available Scripts
+PublicFix is a full-stack civic-tech web application that enables citizens to report local infrastructure issues and allows authorized officials to track, manage, and resolve them through a centralized dashboard.
 
-In the project directory, you can run:
+The platform connects **citizens, issue reporting, geolocation, and municipal issue management** into a single workflow.
 
-### `npm start`
+## 🚀 Live Demo
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+**[PublicFix — Live Application](https://public-fix.vercel.app)**
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🎥 Demo Video
 
-### `npm test`
+> YouTube walkthrough coming soon.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+**Video:** `<!-- Add YouTube link here -->`
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## ✨ Key Features
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Citizen Experience
+- 🔐 Email/password authentication
+- 🔑 Google Sign-In
+- 🗺️ Interactive map-based issue reporting
+- 📍 Location-based issue submission
+- 🏷️ Categorized civic issues
+- 📊 Real-time issue status visibility
+- 👤 Role-based access control
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Official Dashboard
+- 📋 Centralized issue management
+- 📊 Issue overview and status tracking
+- 🔄 Update issue status:
+  - Pending
+  - In Progress
+  - Resolved
+- 🗺️ Access to the public issue map
+- 🔒 Restricted official functionality
 
-### `npm run eject`
+### Authentication & Security
+- Firebase Authentication
+- Role-based authorization
+- Firestore security rules
+- Protected application routes
+- Citizen-only public registration
+- Official accounts are not created through public signup
+- Firestore rules prevent users from assigning themselves the `Official` role
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+---
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 🏗️ Architecture
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```text
+                         ┌──────────────────────┐
+                         │       PublicFix      │
+                         │      React App       │
+                         └──────────┬───────────┘
+                                    │
+                    ┌───────────────┴───────────────┐
+                    │                               │
+             Authentication                    Application
+                    │                               │
+                    ▼                               ▼
+          ┌─────────────────┐              ┌─────────────────┐
+          │ Firebase Auth   │              │ React Components│
+          │                 │              │                 │
+          │ Email / Google  │              │ Map / Dashboard │
+          └────────┬────────┘              └────────┬────────┘
+                   │                                │
+                   └──────────────┬─────────────────┘
+                                  ▼
+                         ┌─────────────────┐
+                         │    Firestore    │
+                         │                 │
+                         │ users           │
+                         │ reportedIssues  │
+                         └─────────────────┘
+                                  │
+                                  ▼
+                         ┌─────────────────┐
+                         │   Vercel        │
+                         │ Production Host │
+                         └─────────────────┘
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+---
 
-## Learn More
+## 🛠️ Tech Stack
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+| Layer | Technology |
+|---|---|
+| Frontend | React.js |
+| Routing | React Router |
+| Authentication | Firebase Authentication |
+| Database | Cloud Firestore |
+| Maps | Leaflet |
+| Hosting | Vercel |
+| Language | JavaScript |
+| Version Control | Git & GitHub |
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+---
 
-### Code Splitting
+## 🔄 Application Workflow
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### 1. Authentication
 
-### Analyzing the Bundle Size
+Users can authenticate using:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+- Email & password
+- Google Sign-In
 
-### Making a Progressive Web App
+Each authenticated user receives a Firebase UID that is used to associate their application profile with their account.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### 2. Role-Based Access
 
-### Advanced Configuration
+PublicFix supports two application roles:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+```text
+Citizen
+   │
+   └──► PublicFix Map
+          │
+          └──► Report Civic Issue
 
-### Deployment
+Official
+   │
+   └──► Admin Dashboard
+          │
+          ├──► Manage Issues
+          ├──► Update Status
+          └──► View Public Map
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### 3. Issue Reporting
 
-### `npm run build` fails to minify
+Citizens can report civic problems through the interactive map.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Reported issues contain information such as:
+
+- Issue category
+- Geographic coordinates
+- Address
+- Map icon
+- Timestamp
+- Current status
+
+New reports initially receive the status:
+
+`Pending`
+
+### 4. Issue Management
+
+Officials can review reported issues and update their status as work progresses:
+
+```text
+Pending
+   ↓
+In Progress
+   ↓
+Resolved
+```
+
+Changes are persisted in Firestore and reflected throughout the application.
+
+---
+
+## 🔐 Security Model
+
+Security is enforced at both the **application and database layers**.
+
+### Firestore Security Rules
+
+The database rules enforce:
+
+- Users can access their own profile.
+- Public registration can only create Citizen profiles.
+- Citizens cannot promote themselves to Official.
+- Issue creation is restricted to authenticated users.
+- Only authorized Officials can modify issue status.
+- Issue fields cannot be arbitrarily modified by clients.
+
+This provides an additional security layer beyond frontend route protection.
+
+---
+
+## 📂 Project Structure
+
+```text
+PublicFix/
+│
+├── public/
+│
+├── src/
+│   ├── components/
+│   │   ├── AdminDashboard.js
+│   │   ├── HomePage.js
+│   │   ├── Login.js
+│   │   ├── PublicFix.js
+│   │   └── SignUp.js
+│   │
+│   ├── App.js
+│   ├── firebase.js
+│   ├── index.css
+│   └── index.js
+│
+├── firestore.rules
+├── firestore.indexes.json
+├── firebase.json
+├── package.json
+└── README.md
+```
+
+---
+
+## 🗄️ Firestore Data Model
+
+### `users/{uid}`
+
+```text
+{
+  email: string,
+  role: "Citizen" | "Official"
+}
+```
+
+### `reportedIssues/{issueId}`
+
+```text
+{
+  lat: number,
+  lon: number,
+  issue: string,
+  icon: string,
+  address: string,
+  timestamp: Timestamp,
+  status: "Pending" | "In Progress" | "Resolved"
+}
+```
+
+---
+
+## ▶️ Running Locally
+
+### Prerequisites
+
+- Node.js
+- npm
+- Firebase project
+
+### Installation
+
+```bash
+git clone https://github.com/harshitha-puliroju/PublicFix.git
+
+cd PublicFix
+
+npm install
+```
+
+### Start Development Server
+
+```bash
+npm start
+```
+
+The application will run locally at:
+
+```text
+http://localhost:3000
+```
+
+### Production Build
+
+```bash
+npm run build
+```
+
+---
+
+## 🌐 Deployment
+
+PublicFix is deployed using **Vercel** with GitHub-based continuous deployment.
+
+```text
+GitHub
+   │
+   ▼
+Vercel
+   │
+   ▼
+Production Build
+   │
+   ▼
+PublicFix
+```
+
+Every update pushed to the production branch can trigger a new deployment.
+
+---
+
+## 🧪 Current Project Status
+
+- ✅ Firebase Authentication
+- ✅ Google Sign-In
+- ✅ Firestore database
+- ✅ Role-based authorization
+- ✅ Firestore security rules
+- ✅ Citizen issue reporting
+- ✅ Interactive map
+- ✅ Official dashboard
+- ✅ Issue status management
+- ✅ Production deployment
+- 🚧 UI modernization
+- 🚧 YouTube project walkthrough
+
+---
+
+## 🔮 Future Improvements
+
+Planned improvements include:
+
+- Modern responsive UI/UX
+- Citizen profile and settings
+- Improved issue filtering and search
+- Personal issue history
+- Enhanced dashboard analytics
+- Better mobile experience
+- Image attachments for reported issues
+- Notifications for issue status changes
+- Improved accessibility
+- Performance and loading-state optimizations
+
+---
+
+## 👩‍💻 Author
+
+**Harshitha Puliroju**
+
+Computer Science & Engineering — Data Science
+
+[GitHub](https://github.com/harshitha-puliroju)
+
+---
+
+## ⭐ Why PublicFix?
+
+PublicFix was built to explore how a real-world civic workflow can be translated into a secure web application — from authentication and role-based authorization to geospatial issue reporting, database design, security rules, and production deployment.
+
+The project focuses on building a practical system rather than a purely visual prototype.
