@@ -6,9 +6,81 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function userPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function issuePath(issueId) {
+      return /databases/$(database)/documents/reportedIssues/$(issueId);
+    }
+
     function isOfficial() {
       return isSignedIn()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Official';
+        && get(userPath(request.auth.uid)).data.role == 'Official';
+    }
+
+    function publicReporterName() {
+      let profile = get(userPath(request.auth.uid)).data;
+      return profile.get('displayName', request.auth.token.get('name', 'Citizen'));
+    }
+
+    function votePath(issueId, uid) {
+      return /databases/$(database)/documents/reportedIssues/$(issueId)/votes/$(uid);
+    }
+
+    function voteTypeBefore(issueId) {
+      let path = votePath(issueId, request.auth.uid);
+      return exists(path) ? get(path).data.get('type', '') : '';
+    }
+
+    function voteTypeAfter(issueId) {
+      let path = votePath(issueId, request.auth.uid);
+      return existsAfter(path) ? getAfter(path).data.get('type', '') : '';
+    }
+
+    function validVoteCounterDelta(oldIssue, newIssue, oldType, newType) {
+      let oldUpvotes = oldIssue.get('upvotes', 0);
+      let oldDownvotes = oldIssue.get('downvotes', 0);
+      let newUpvotes = newIssue.get('upvotes', -1);
+      let newDownvotes = newIssue.get('downvotes', -1);
+      return oldUpvotes is int
+        && oldDownvotes is int
+        && newUpvotes is int
+        && newDownvotes is int
+        && newUpvotes >= 0
+        && newDownvotes >= 0
+        && newUpvotes == oldUpvotes + (newType == 'up' ? 1 : 0) - (oldType == 'up' ? 1 : 0)
+        && newDownvotes == oldDownvotes + (newType == 'down' ? 1 : 0) - (oldType == 'down' ? 1 : 0);
+    }
+
+    function validIssueVoteUpdate(issueId) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return isSignedIn()
+        && changed.hasOnly(['upvotes', 'downvotes'])
+        && changed.hasAny(['upvotes', 'downvotes'])
+        && validVoteCounterDelta(resource.data, request.resource.data, voteTypeBefore(issueId), voteTypeAfter(issueId));
+    }
+
+    function validVoteCountChange(issueId, oldType, newType) {
+      let parentPath = issuePath(issueId);
+      let before = get(parentPath).data;
+      let after = getAfter(parentPath).data;
+      let changed = after.diff(before).affectedKeys();
+      let beforeUpvotes = before.get('upvotes', 0);
+      let beforeDownvotes = before.get('downvotes', 0);
+      let afterUpvotes = after.get('upvotes', -1);
+      let afterDownvotes = after.get('downvotes', -1);
+      return exists(parentPath)
+        && changed.hasOnly(['upvotes', 'downvotes'])
+        && changed.hasAny(['upvotes', 'downvotes'])
+        && beforeUpvotes is int
+        && beforeDownvotes is int
+        && afterUpvotes is int
+        && afterDownvotes is int
+        && afterUpvotes >= 0
+        && afterDownvotes >= 0
+        && afterUpvotes == beforeUpvotes + (newType == 'up' ? 1 : 0) - (oldType == 'up' ? 1 : 0)
+        && afterDownvotes == beforeDownvotes + (newType == 'down' ? 1 : 0) - (oldType == 'down' ? 1 : 0);
     }
 
     match /users/{uid} {
@@ -16,21 +88,36 @@ service cloud.firestore {
 
       allow create: if isSignedIn()
         && request.auth.uid == uid
-        && request.resource.data.keys().hasAll(['email', 'role'])
-        && request.resource.data.keys().hasOnly(['email', 'role'])
+        && request.resource.data.keys().hasAll(['email', 'role', 'displayName', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['email', 'role', 'displayName', 'createdAt'])
         && request.resource.data.email is string
-        && request.resource.data.role == 'Citizen';
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == 'Citizen'
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 60
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 60;
     }
 
     match /reportedIssues/{issueId} {
       allow read: if isSignedIn();
 
       allow create: if isSignedIn()
+        && exists(userPath(request.auth.uid))
         && request.resource.data.keys().hasAll([
-          'lat', 'lon', 'issue', 'icon', 'address', 'timestamp', 'status'
+          'lat', 'lon', 'issue', 'icon', 'address', 'timestamp', 'status',
+          'reportedBy', 'reporterName', 'upvotes', 'downvotes'
         ])
         && request.resource.data.keys().hasOnly([
-          'lat', 'lon', 'issue', 'icon', 'address', 'timestamp', 'status'
+          'lat', 'lon', 'issue', 'icon', 'address', 'timestamp', 'status',
+          'reportedBy', 'reporterName', 'upvotes', 'downvotes'
         ])
         && request.resource.data.lat is number
         && request.resource.data.lat >= -90
@@ -42,11 +129,47 @@ service cloud.firestore {
         && request.resource.data.icon is string
         && request.resource.data.address is string
         && request.resource.data.timestamp is timestamp
-        && request.resource.data.status == 'Pending';
+        && request.resource.data.status == 'Pending'
+        && request.resource.data.reportedBy == request.auth.uid
+        && request.resource.data.reporterName is string
+        && request.resource.data.reporterName.size() > 0
+        && request.resource.data.reporterName.size() <= 60
+        && request.resource.data.reporterName == publicReporterName()
+        && request.resource.data.upvotes is int
+        && request.resource.data.upvotes == 0
+        && request.resource.data.downvotes is int
+        && request.resource.data.downvotes == 0;
 
-      allow update: if isOfficial()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-        && request.resource.data.status in ['Pending', 'In Progress', 'Resolved'];
+      allow update: if (isOfficial()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+          && request.resource.data.status in ['Pending', 'In Progress', 'Resolved'])
+        || validIssueVoteUpdate(issueId);
+
+      match /votes/{uid} {
+        allow read: if isSignedIn() && request.auth.uid == uid;
+
+        allow create: if isSignedIn()
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasAll(['type', 'updatedAt'])
+          && request.resource.data.keys().hasOnly(['type', 'updatedAt'])
+          && request.resource.data.type in ['up', 'down']
+          && request.resource.data.updatedAt == request.time
+          && validVoteCountChange(issueId, '', request.resource.data.type);
+
+        allow update: if isSignedIn()
+          && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['type', 'updatedAt'])
+          && request.resource.data.type in ['up', 'down']
+          && resource.data.type in ['up', 'down']
+          && request.resource.data.type != resource.data.type
+          && request.resource.data.updatedAt == request.time
+          && validVoteCountChange(issueId, resource.data.type, request.resource.data.type);
+
+        allow delete: if isSignedIn()
+          && request.auth.uid == uid
+          && resource.data.type in ['up', 'down']
+          && validVoteCountChange(issueId, resource.data.type, '');
+      }
     }
   }
 }

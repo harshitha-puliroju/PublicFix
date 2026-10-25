@@ -6,7 +6,7 @@ import {
 } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const getLoginErrorMessage = (error) => {
   switch (error.code) {
@@ -132,117 +132,90 @@ function Login({ profileLoading = false, profileError = '' }) {
   };
 
   return (
-    <div className="login-container">
-      <div className="form-box">
-        <h2>Login</h2>
-        {(error || profileError) && <p className="error">{error || profileError}</p>}
-        <form onSubmit={handleLogin}>
-          <input type="email" placeholder="Email" onChange={e => setEmail(e.target.value)} required />
-          <div className="password-input-wrapper">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-            />
-            <button
-              type="button"
-              className="password-visibility-button"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-              aria-pressed={showPassword}
-              onClick={() => setShowPassword((visible) => !visible)}
-            >
-              {showPassword ? '🙈' : '👁️'}
-            </button>
-          </div>
-          <button type="submit" disabled={loading || profileLoading}>
-            {loading && loadingAction === 'email' ? 'Logging in...' : profileLoading ? 'Loading profile...' : 'Login'}
-          </button>
-        </form>
-        <button
-          type="button"
-          className="google-sign-in-button"
-          onClick={handleGoogleLogin}
-          disabled={loading || profileLoading}
-        >
-          {loading && loadingAction === 'google'
-            ? 'Connecting to Google...'
-            : profileLoading
-              ? 'Setting up your profile...'
-              : 'Continue with Google'}
-        </button>
-        <p>Don't have an account? <a href="/SignUp">Sign Up</a></p>
-      </div>
+    <main className="auth-page">
+      <section className="auth-aside" aria-label="About PublicFix">
+        <Link className="brand-lockup brand-lockup-light" to="/">
+          <span className="brand-mark" aria-hidden="true">P</span>
+          <span>PublicFix</span>
+        </Link>
+        <div className="auth-aside-copy">
+          <p className="eyebrow eyebrow-light">A stronger community starts here</p>
+          <h1>Make local change visible.</h1>
+          <p>Report public issues, follow progress, and help your community move forward.</p>
+        </div>
+        <p className="auth-aside-footer">A clearer connection between people and the places they share.</p>
+      </section>
 
-      {/* Your background will remain intact here */}
-      <style>{`
-        .login-container {
-          display: flex;
-          height: 100vh;
-          justify-content: center;
-          align-items: center;
-          background: url('https://images.pexels.com/photos/41949/earth-earth-at-night-night-lights-41949.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2') no-repeat center center fixed;
-          background-size: cover;
-        }
-        .form-box {
-          background: rgba(0, 0, 0, 0.7);
-          padding: 30px;
-          border-radius: 8px;
-          box-shadow: 0 0 10px rgba(0,0,0,0.2);
-          width: 300px;
-          text-align: center;
-        }
-        h2 {
-          color: #ffffff;
-        }
-        input {
-          width: 100%;
-          padding: 10px;
-          margin: 10px 0;
-          border-radius: 4px;
-          background-color: #00334d;
-          color: white;
-        }
-        .password-input-wrapper {
-          position: relative;
-          width: 100%;
-        }
-        .password-input-wrapper input {
-          padding-right: 48px;
-        }
-        .password-visibility-button {
-          position: absolute;
-          top: 50%;
-          right: 6px;
-          transform: translateY(-50%);
-          width: 36px;
-          height: 36px;
-          padding: 4px;
-          background: transparent;
-          color: white;
-          cursor: pointer;
-        }
-        .google-sign-in-button {
-          margin-top: 10px;
-        }
-        button {
-          width: 100%;
-          padding: 10px;
-          background-color: #007bff;
-          color: white;
-          border: none;
-          border-radius: 4px;
-        }
-        .error {
-          color: #ffcc00;
-        }
-        a {
-          color: #ffffff;
-          font-weight: bold;
-        }
-      `}</style>
-    </div>
+      <section className="auth-main" aria-labelledby="login-title">
+        <div className="auth-card surface-card">
+          <Link className="brand-lockup auth-card-brand" to="/" aria-label="PublicFix home">
+            <span className="brand-mark" aria-hidden="true">P</span>
+            <span>PublicFix</span>
+          </Link>
+          <div className="auth-heading">
+            <p className="eyebrow">Your community, connected</p>
+            <h2 id="login-title">Welcome back</h2>
+            <p className="form-helper">Sign in to continue to PublicFix.</p>
+          </div>
+          {(error || profileError) && <p className="form-error" role="alert" aria-live="polite">{error || profileError}</p>}
+          <form className="auth-form" onSubmit={handleLogin}>
+            <div className="form-field">
+              <label className="form-label" htmlFor="login-email">Email</label>
+              <input
+                className="form-input"
+                id="login-email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                onChange={e => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-field">
+              <label className="form-label" htmlFor="login-password">Password</label>
+              <div className="password-field">
+                <input
+                  className="form-input password-field-input"
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((visible) => !visible)}
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+            <button className="button button-primary auth-submit" type="submit" disabled={loading || profileLoading}>
+              {loading && loadingAction === 'email' ? 'Logging in...' : profileLoading ? 'Loading profile...' : 'Sign In'}
+            </button>
+          </form>
+          <div className="auth-divider"><span>or</span></div>
+          <button
+            type="button"
+            className="button button-secondary google-sign-in-button"
+            onClick={handleGoogleLogin}
+            disabled={loading || profileLoading}
+          >
+            {loading && loadingAction === 'google'
+              ? 'Connecting to Google...'
+              : profileLoading
+                ? 'Setting up your profile...'
+                : 'Continue with Google'}
+          </button>
+          <p className="auth-footer">Don't have an account? <Link to="/signup">Create one</Link></p>
+        </div>
+      </section>
+    </main>
   );
 }
 

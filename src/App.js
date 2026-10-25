@@ -141,17 +141,22 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { auth, db } from './firebase';
-import { doc, onSnapshot, runTransaction } from 'firebase/firestore';
+import { doc, onSnapshot, runTransaction, serverTimestamp } from 'firebase/firestore';
 
 import HomePage from './components/HomePage';
 import PublicFix from './components/PublicFix';
 import AdminDashboard from './components/AdminDashboard';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
+import AuthenticatedLayout from './components/AuthenticatedLayout';
+import MyReports from './components/MyReports';
+import MyProfile from './components/MyProfile';
+import Settings from './components/Settings';
 
 const App = () => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [roleLoading, setRoleLoading] = useState(true);
   const [profileError, setProfileError] = useState('');
@@ -170,6 +175,7 @@ const App = () => {
       if (!currentUser) {
         setUser(null);
         setRole(null);
+        setProfile(null);
         setProfileError('');
         setRoleLoading(false);
         setLoading(false);
@@ -178,6 +184,7 @@ const App = () => {
 
       setUser(currentUser);
       setRole(null);
+      setProfile(null);
       setRoleLoading(true);
       setProfileError('');
 
@@ -190,7 +197,9 @@ const App = () => {
         if (auth.currentUser?.uid !== currentUser.uid) return;
 
         if (userDoc.exists()) {
-          const userRole = userDoc.data().role;
+          const userProfile = userDoc.data();
+          const userRole = userProfile.role;
+          setProfile(userProfile);
           setRole(userRole || null);
           setProfileError(userRole === 'Citizen' || userRole === 'Official'
             ? ''
@@ -206,20 +215,25 @@ const App = () => {
         }
 
         try {
-          const userRole = await runTransaction(db, async (transaction) => {
+          const userProfile = await runTransaction(db, async (transaction) => {
             const profile = await transaction.get(userRef);
-            if (profile.exists()) return profile.data().role;
+            if (profile.exists()) return profile.data();
 
-            transaction.set(userRef, {
+            const authDisplayName = currentUser.displayName?.trim().slice(0, 60);
+            const newProfile = {
               email: currentUser.email || '',
               role: 'Citizen',
-            });
-            return 'Citizen';
+              displayName: authDisplayName || 'Citizen',
+              createdAt: serverTimestamp(),
+            };
+            transaction.set(userRef, newProfile);
+            return newProfile;
           });
 
           if (auth.currentUser?.uid !== currentUser.uid) return;
-          setRole(userRole || null);
-          setProfileError(userRole === 'Citizen' || userRole === 'Official'
+          setProfile(userProfile);
+          setRole(userProfile.role || null);
+          setProfileError(userProfile.role === 'Citizen' || userProfile.role === 'Official'
             ? ''
             : 'Your profile is missing a valid role. Please contact support.');
           setRoleLoading(false);
@@ -228,6 +242,7 @@ const App = () => {
             console.error('Error loading user profile:', { code: err.code, message: err.message });
           }
           setRole(null);
+          setProfile(null);
           setProfileError('Your profile could not be loaded. Please try again.');
           setRoleLoading(false);
         }
@@ -237,6 +252,7 @@ const App = () => {
           console.error('Error loading user profile:', { code: err.code, message: err.message });
         }
         setRole(null);
+        setProfile(null);
         setProfileError('Your profile could not be loaded. Please try again.');
         setRoleLoading(false);
       });
@@ -264,20 +280,16 @@ const App = () => {
           }
         />
         <Route path="/signup" element={<SignUp />} />
-        <Route
-          path="/publicfix"
-          element={
-            user && roleLoading ? <div>Loading...</div> :
-              user && (role === 'Citizen' || role === 'Official') ? <PublicFix isOfficial={role === 'Official'} /> : <Navigate to="/login" />
-          }
-        />
-        <Route
-          path="/admindashboard"
-          element={
-            user && roleLoading ? <div>Loading...</div> :
-              user && role === 'Official' ? <AdminDashboard /> : <Navigate to="/login" />
-          }
-        />
+        {user && !roleLoading && (role === 'Citizen' || role === 'Official') && (
+          <Route element={<AuthenticatedLayout user={user} profile={profile} role={role} />}>
+            <Route path="/publicfix" element={<PublicFix isOfficial={role === 'Official'} user={user} profile={profile} />} />
+            <Route path="/my-reports" element={<MyReports user={user} />} />
+            <Route path="/profile" element={<MyProfile user={user} profile={profile} role={role} />} />
+            <Route path="/settings" element={<Settings user={user} />} />
+            <Route path="/admindashboard" element={role === 'Official' ? <AdminDashboard /> : <Navigate to="/login" replace />} />
+          </Route>
+        )}
+        <Route path="*" element={user && roleLoading ? <div>Loading...</div> : <Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );

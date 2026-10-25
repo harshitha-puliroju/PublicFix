@@ -1,8 +1,24 @@
 import React, { useState } from 'react';
 import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { Link, useNavigate } from 'react-router-dom';
+
+const getSignupErrorText = (error) => {
+  const code = error.match(/auth\/([a-z-]+)/)?.[1];
+  switch (code) {
+    case 'email-already-in-use':
+      return 'An account already exists for this email. Try signing in instead.';
+    case 'invalid-email':
+      return 'Enter a valid email address.';
+    case 'weak-password':
+      return 'Choose a stronger password and try again.';
+    case 'network-request-failed':
+      return 'Could not connect to the sign-up service. Check your connection and try again.';
+    default:
+      return 'We could not create your account. Please check your details and try again.';
+  }
+};
 
 function SignUp() {
   const [email, setEmail] = useState('');
@@ -25,6 +41,8 @@ function SignUp() {
       await setDoc(doc(db, 'users', uid), {
         email,
         role: 'Citizen',
+        displayName: userCredential.user.displayName || 'Citizen',
+        createdAt: serverTimestamp(),
       });
 
       console.log('User role saved: Citizen');
@@ -38,82 +56,68 @@ function SignUp() {
   };
 
   return (
-    <div className="signup-container">
-      <div className="form-box">
-        <h2>Sign Up</h2>
-        {error && <p className="error">{error}</p>}
-        <form onSubmit={handleSignUp}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <button type="submit" disabled={loading}>
-            {loading ? 'Signing Up...' : 'Sign Up'}
-          </button>
-        </form>
-        <p>
-          Already have an account? <a href="/Login">Login</a>
-        </p>
-      </div>
+    <main className="auth-page">
+      <section className="auth-aside" aria-label="About PublicFix">
+        <Link className="brand-lockup brand-lockup-light" to="/">
+          <span className="brand-mark" aria-hidden="true">P</span>
+          <span>PublicFix</span>
+        </Link>
+        <div className="auth-aside-copy">
+          <p className="eyebrow eyebrow-light">Small actions, lasting impact</p>
+          <h1>Help your neighborhood thrive.</h1>
+          <p>Create an account to report local issues and stay connected to their progress.</p>
+        </div>
+        <p className="auth-aside-footer">Together, we can make everyday places work better for everyone.</p>
+      </section>
 
-      <style>{
-        `.signup-container {
-          display: flex;
-          height: 100vh;
-          justify-content: center;
-          align-items: center;
-          background: url('https://thumbs.dreamstime.com/b/nighttime-road-work-illuminated-floodlights-workers-repairing-potholes-generative-ai-illustration-346676061.jpg') no-repeat center center fixed;
-          background-size: cover;
-        }
-        .form-box {
-          background: rgba(0, 0, 0, 0.7);
-          padding: 30px;
-          border-radius: 8px;
-          box-shadow: 0 0 10px rgba(0,0,0,0.2);
-          width: 300px;
-          text-align: center;
-        }
-        h2 {
-          color: #ffffff;
-        }
-        input, select {
-          width: 100%;
-          padding: 10px;
-          margin: 10px 0;
-          border-radius: 4px;
-          background-color: #00334d;
-          color: white;
-        }
-        button {
-          width: 100%;
-          padding: 10px;
-          background-color: #007bff;
-          color: white;
-          border: none;
-          border-radius: 4px;
-        }
-        button:disabled {
-          background-color: #0056b3;
-        }
-        .error {
-          color: #ffcc00;
-        }
-        a {
-          color: #ffffff;
-          font-weight: bold;
-        }`
-      }</style>
-    </div>
+      <section className="auth-main" aria-labelledby="signup-title">
+        <div className="auth-card surface-card">
+          <Link className="brand-lockup auth-card-brand" to="/" aria-label="PublicFix home">
+            <span className="brand-mark" aria-hidden="true">P</span>
+            <span>PublicFix</span>
+          </Link>
+          <div className="auth-heading">
+            <p className="eyebrow">Join your community</p>
+            <h2 id="signup-title">Create your PublicFix account</h2>
+            <p className="form-helper">A few details are all you need to get started.</p>
+          </div>
+          {error && <p className="form-error" role="alert" aria-live="polite">{getSignupErrorText(error)}</p>}
+          <form className="auth-form" onSubmit={handleSignUp}>
+            <div className="form-field">
+              <label className="form-label" htmlFor="signup-email">Email</label>
+              <input
+                className="form-input"
+                id="signup-email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-field">
+              <label className="form-label" htmlFor="signup-password">Password</label>
+              <input
+                className="form-input"
+                id="signup-password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="Create a password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <p className="form-helper password-hint">Use a password you can remember and keep secure.</p>
+            <button className="button button-primary auth-submit" type="submit" disabled={loading}>
+              {loading ? 'Creating account...' : 'Create Account'}
+            </button>
+          </form>
+          <p className="auth-footer">Already have an account? <Link to="/login">Sign in</Link></p>
+        </div>
+      </section>
+    </main>
   );
 }
 
